@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบันทึกเงินออมนักเรียน - ตี๋น้อย ป.6/3</title>
+    
+    <!-- Google Fonts: Prompt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Prompt', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'] },
+                    colors: {
+                        iosBlue: '#007AFF',
+                        iosGreen: '#34C759',
+                        iosYellow: '#FFCC00',
+                        iosOrange: '#FF9500',
+                        iosRed: '#FF3B30',
+                        iosPurple: '#AF52DE',
+                        iosTeal: '#30B0C7',
+                        iosBg: '#F2F2F7',
+                        iosCard: '#FFFFFF'
+                    },
+                    boxShadow: {
+                        'app': '0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04)',
+                        'gold': '0 0 20px rgba(255, 204, 0, 0.4)'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- FontAwesome Icons & Canvas Confetti -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #F8FAFC;
+            color: #1E293B;
+            touch-action: manipulation;
+        }
+
+        .gold-glow {
+            background: linear-gradient(135deg, #FFFDF0 0%, #FFF9D6 50%, #FFE066 100%);
+            border: 2px solid #FFCC00;
+        }
+
+        .touch-active:active {
+            transform: scale(0.97);
+            opacity: 0.9;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-100 flex flex-col">
+
+    <!-- Web App Main Header Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+            
+            <!-- Classroom Title Widget -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-iosBlue text-white rounded-2xl flex items-center justify-center text-xl font-bold shadow-md shadow-blue-200">
+                    🏫
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 id="headerClassName" class="font-bold text-base sm:text-lg text-slate-800 tracking-tight">ตี๋น้อย ป.6/3</h1>
+                        <button id="btnEditTitle" onclick="openTitleModal()" class="text-slate-400 hover:text-iosBlue p-1 transition hidden" title="แก้ไขชื่อห้องเรียน & เป้าหมาย">
+                            <i class="fa-solid fa-pen text-xs"></i>
+                        </button>
+                    </div>
+                    <p id="headerTeacherName" class="text-xs text-slate-500 font-medium">ครูประจำชั้น: ครูปูเปี้ยว</p>
+                </div>
+            </div>
+
+            <!-- Top Action Controls -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Open Google Sheets Direct Link Button -->
+                <a id="btnOpenSheetDirect" href="#" target="_blank" class="hidden bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-3 py-1.5 rounded-xl text-xs transition border border-emerald-200 items-center gap-1.5">
+                    <i class="fa-solid fa-file-excel text-emerald-600"></i>
+                    <span class="hidden md:inline">เปิดตาราง Google Sheets</span>
+                </a>
+
+                <!-- Sync Status / Sheets Config Badge -->
+                <button onclick="openModal('modalSheets')" class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition">
+                    <span id="sheetsStatusBadge" class="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
+                    <span class="hidden sm:inline">ตั้งค่า Google Sheets</span>
+                </button>
+
+                <!-- Parent Share Button -->
+                <button onclick="openModal('modalShare')" class="bg-purple-50 hover:bg-purple-100 text-iosPurple font-bold px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 border border-purple-200">
+                    <i class="fa-solid fa-share-nodes"></i>
+                    <span class="hidden sm:inline">แชร์ผู้ปกครอง</span>
+                </button>
+
+                <!-- Teacher Login / View Mode Switcher -->
+                <div class="flex items-center bg-slate-200 p-1 rounded-xl">
+                    <button id="btnModeView" onclick="setEditMode(false)" class="px-2.5 py-1 rounded-lg text-xs font-bold transition bg-emerald-500 text-white shadow-sm">
+                        <i class="fa-solid fa-eye"></i> <span class="hidden sm:inline ml-1">ดู</span>
+                    </button>
+                    <button id="btnModeTeacher" onclick="handleTeacherModeClick()" class="px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:bg-slate-100">
+                        <i class="fa-solid fa-user-gear"></i> <span class="hidden sm:inline ml-1">ครู</span>
+                    </button>
+                </div>
+
+                <button id="btnLogout" onclick="logoutTeacher()" class="hidden bg-red-50 hover:bg-red-100 text-iosRed font-bold px-2.5 py-1.5 rounded-xl text-xs transition border border-red-200" title="ออกจากระบบครู">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-5">
+
+        <!-- Top Status Banner & Goal Widget -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-inner shrink-0">
+                    🎯
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-base sm:text-lg font-bold text-slate-800">ระบบบันทึกเงินออมรายวัน</h2>
+                        <span id="goalBadge" class="bg-amber-100 text-amber-800 text-xs font-extrabold px-3 py-0.5 rounded-full border border-amber-200">
+                            เป้าหมาย 300 บาท
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5">บันทึกยอดเงินออม และเชื่อมต่อตารางบันทึกใน Google Sheets</p>
+                </div>
+            </div>
+
+            <!-- Date Selector & Add Student Trigger -->
+            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                <div class="bg-slate-100 border border-slate-200 rounded-2xl px-3 py-1.5 flex items-center gap-2 text-xs font-bold text-slate-700 flex-1 sm:flex-initial justify-between">
+                    <span><i class="fa-regular fa-calendar text-iosBlue mr-1"></i> วันที่:</span>
+                    <input type="date" id="inputSelectedDate" onchange="handleDateChange(this.value)" class="bg-white border border-slate-300 font-bold rounded-xl px-2.5 py-1 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-iosBlue">
+                </div>
+
+                <button id="btnAddStudentTrigger" onclick="openModal('modalAddStudent')" class="hidden bg-iosGreen hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-2xl text-xs shadow-md transition touch-active items-center gap-1.5">
+                    <i class="fa-solid fa-user-plus"></i> เพิ่มนักเรียน
+                </button>
+            </div>
+        </div>
+
+        <!-- View Only Mode Notice Banner -->
+        <div id="viewOnlyNotice" class="bg-amber-500/10 border border-amber-300 rounded-2xl p-3 flex items-center justify-between text-amber-900 text-xs shadow-sm">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved text-amber-600 text-base"></i>
+                <span>ขณะนี้คุณกำลังอยู่ใน <strong>"โหมดดูอย่างเดียว"</strong> (สำหรับผู้ปกครอง/นักเรียน)</span>
+            </div>
+            <button onclick="handleTeacherModeClick()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-1.5 rounded-xl transition shadow-sm touch-active">
+                เข้าสู่ระบบครู
+            </button>
+        </div>
+
+        <!-- Dashboard Summary Stats Cards Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+            <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm flex items-center gap-3.5 hover:shadow-md transition">
+                <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl shrink-0">🐷</div>
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">กระปุกใหญ่ประจำวัน</p>
+                    <p class="text-xl font-extrabold text-amber-600"><span id="statDailyTotal">0</span> <span class="text-xs font-medium text-slate-500">บาท</span></p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm flex items-center gap-3.5 hover:shadow-md transition">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl shrink-0">🏦</div>
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">เงินออมสะสมรวม</p>
+                    <p class="text-xl font-extrabold text-emerald-600"><span id="statGrandTotal">0</span> <span class="text-xs font-medium text-slate-500">บาท</span></p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm flex items-center gap-3.5 hover:shadow-md transition">
+                <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center text-2xl shrink-0">👑</div>
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ออมครบเป้าหมาย</p>
+                    <p class="text-xl font-extrabold text-purple-600"><span id="statCompletedCount">0</span> <span class="text-xs font-medium text-slate-500" id="statTotalStudentsLabel">/ 0 คน</span></p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm flex items-center gap-3.5 hover:shadow-md transition">
+                <div class="w-12 h-12 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-2xl shrink-0">👨‍🎓</div>
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">จำนวนนักเรียน</p>
+                    <p class="text-xl font-extrabold text-sky-600"><span id="statCountAll">0</span> <span class="text-xs font-medium text-slate-500">คน</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Interactive Content Card -->
+        <div class="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm flex-1 flex flex-col min-h-[500px]">
+            
+            <!-- Toolbar: View Switcher + Daily Witness + Search Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4 shrink-0 pb-3 border-b border-slate-100">
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Tab Switcher -->
+                    <div class="bg-slate-100 p-1 rounded-2xl flex border border-slate-200">
+                        <button onclick="switchTab('table')" id="navTable" class="px-3.5 py-1.5 rounded-xl font-bold text-xs text-iosBlue bg-white shadow-sm transition">
+                            <i class="fa-solid fa-table-list mr-1"></i> ตารางบันทึก
+                        </button>
+                        <button onclick="switchTab('cards')" id="navCards" class="px-3.5 py-1.5 rounded-xl font-bold text-xs text-slate-600 hover:text-slate-800 transition">
+                            <i class="fa-solid fa-id-card mr-1"></i> การ์ดความคืบหน้า
+                        </button>
+                    </div>
+
+                    <!-- Daily Witness Selector -->
+                    <div class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-2xl border border-slate-200">
+                        <span class="text-xs font-bold text-slate-600"><i class="fa-solid fa-handshake text-iosBlue mr-1"></i> พยานประจำวัน:</span>
+                        <select id="selectWitness" onchange="handleWitnessChange(this.value)" class="bg-white border border-slate-200 text-slate-800 rounded-xl px-2.5 py-1 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-iosBlue disabled:bg-slate-200">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Search Input -->
+                <div class="relative w-full sm:w-64">
+                    <input type="text" id="inputSearch" oninput="handleSearch(this.value)" placeholder="ค้นหาชื่อ หรือเลขที่..." class="w-full pl-9 pr-3 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:bg-white focus:ring-2 focus:ring-iosBlue transition">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                </div>
+            </div>
+
+            <!-- TAB CONTENT 1: TABLE VIEW -->
+            <div id="tabContentTable" class="flex-1 overflow-x-auto rounded-2xl border border-slate-200">
+                <table class="w-full text-left border-collapse min-w-[700px]">
+                    <thead class="bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
+                        <tr>
+                            <th class="py-3.5 px-4 text-center w-16">เลขที่</th>
+                            <th class="py-3.5 px-4">ชื่อ - นามสกุล</th>
+                            <th class="py-3.5 px-4 text-center min-w-[220px]">ยอดส่งเงินวันนี้ (<span id="tableHeaderDate">--</span>)</th>
+                            <th class="py-3.5 px-4 text-center">ยอดออมสะสม</th>
+                            <th class="py-3.5 px-4 text-center">สถานะ</th>
+                            <th class="py-3.5 px-4 text-center w-28">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentTableBody" class="divide-y divide-slate-100 text-xs font-medium">
+                        <!-- Dynamic rows generated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TAB CONTENT 2: CARDS GRID VIEW -->
+            <div id="tabContentCards" class="hidden flex-1 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
+                <!-- Dynamic cards generated by JS -->
+            </div>
+
+            <!-- Bottom Table Summary Bar -->
+            <div class="mt-4 pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between text-xs text-slate-600 gap-2 shrink-0">
+                <div class="flex items-center gap-4">
+                    <span>🐷 ยอดรวมประจำวัน: <strong id="footDailyTotal" class="text-iosBlue font-bold text-sm">0</strong> บาท</span>
+                    <span>🏦 สะสมรวมทั้งห้อง: <strong id="footGrandTotal" class="text-emerald-600 font-bold text-sm">0</strong> บาท</span>
+                </div>
+                <div class="text-slate-500 text-[11px]">
+                    พยานรับส่งเงินวันนี้: <strong id="footWitnessName" class="text-slate-800">ยังไม่ได้ระบุ</strong>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL 0: TEACHER LOGIN -->
+    <div id="modalLogin" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-app border border-slate-200">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-xl bg-iosBlue/10 text-iosBlue flex items-center justify-center text-sm">👩‍🏫</span>
+                    <span>เข้าสู่ระบบครูประจำชั้น</span>
+                </h3>
+                <button onclick="closeModal('modalLogin')" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="mb-4 bg-blue-50 border border-blue-100 rounded-2xl p-3 flex items-center gap-3">
+                <div class="w-10 h-10 bg-iosBlue text-white rounded-xl flex items-center justify-center text-lg font-bold shadow-sm">👩‍🏫</div>
+                <div>
+                    <p class="text-[10px] text-slate-500">ชื่อครูประจำชั้น:</p>
+                    <p id="modalTeacherName" class="text-xs font-bold text-slate-800">ครูปูเปี้ยว</p>
+                </div>
+            </div>
+            <form onsubmit="submitTeacherLogin(event)">
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">รหัสผ่าน (PIN):</label>
+                    <input type="password" id="inputLoginPin" placeholder="••••••••" required class="w-full bg-slate-100 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-bold text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-iosBlue focus:bg-white">
+                    <p id="loginErrorMsg" class="text-xs text-red-500 font-bold mt-1.5 hidden text-center"></p>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" onclick="closeModal('modalLogin')" class="w-1/3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs touch-active">ยกเลิก</button>
+                    <button type="submit" class="w-2/3 py-2.5 bg-iosBlue hover:bg-blue-600 text-white font-bold rounded-xl text-xs shadow-md touch-active">เข้าสู่ระบบ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 1: ADD STUDENT -->
+    <div id="modalAddStudent" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-app border border-slate-200">
+            <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm">➕</span>
+                <span>เพิ่มนักเรียนใหม่</span>
+            </h3>
+            <form onsubmit="submitAddStudent(event)">
+                <div class="mb-3">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">เลขที่:</label>
+                    <input type="number" id="addStudentNo" required class="w-full bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-iosGreen focus:bg-white">
+                </div>
+                <div class="mb-3">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">ชื่อ - นามสกุล:</label>
+                    <input type="text" id="addStudentName" placeholder="เด็กชาย / เด็กหญิง..." required class="w-full bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-iosGreen focus:bg-white">
+                </div>
+                <div class="mb-5">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">ไอคอนสัตว์ประจำตัว:</label>
+                    <select id="addStudentAvatar" class="w-full bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold"></select>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" onclick="closeModal('modalAddStudent')" class="w-1/2 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs touch-active">ยกเลิก</button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-iosGreen hover:bg-emerald-600 text-white font-bold rounded-xl text-xs shadow-md touch-active">บันทึกเพิ่มนักเรียน</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: EDIT STUDENT -->
+    <div id="modalEditStudent" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-app border border-slate-200">
+            <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-sm">✏️</span>
+                <span>แก้ไขข้อมูลนักเรียน</span>
+            </h3>
+            <form onsubmit="submitEditStudent(event)">
+                <input type="hidden" id="editStudentId">
+                <div class="mb-3">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">เลขที่:</label>
+                    <input type="number" id="editStudentNo" required class="w-full bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+                </div>
+                <div class="mb-3">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">ชื่อ - นามสกุล:</label>
+                    <input type="text" id="editStudentName" required class="w-full bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+                </div>
+                <div class="mb-5">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">ไอคอนสัตว์ประจำตัว:</label>
+                    <select id="editStudentAvatar" class="w-full bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold"></select>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" onclick="closeModal('modalEditStudent')" class="w-1/2 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs touch-active">ยกเลิก</button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs shadow-md touch-active">บันทึกการแก้ไข</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: DELETE CONFIRMATION -->
+    <div id="modalDeleteStudent" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xs w-full p-6 shadow-app border border-slate-200 text-center">
+            <div class="w-12 h-12 bg-red-100 text-red-500 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">🗑️</div>
+            <h3 class="text-base font-bold text-slate-800 mb-1">ยืนยันการลบนักเรียน</h3>
+            <p id="deleteStudentText" class="text-xs text-slate-500 mb-5"></p>
+            <div class="flex gap-2">
+                <button type="button" onclick="closeModal('modalDeleteStudent')" class="w-1/2 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs touch-active">ยกเลิก</button>
+                <button type="button" onclick="confirmDeleteStudent()" class="w-1/2 py-2.5 bg-iosRed hover:bg-red-600 text-white font-bold rounded-xl text-xs shadow-md touch-active">ลบข้อมูล</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: HISTORY & WITNESS -->
+    <div id="modalHistory" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-app border border-slate-200">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-3">
+                    <span id="historyStudentAvatar" class="text-3xl p-1 bg-slate-100 rounded-2xl">🐱</span>
+                    <div>
+                        <h3 id="historyStudentName" class="font-bold text-slate-800 text-sm">--</h3>
+                        <p id="historyStudentNo" class="text-[10px] text-slate-500">เลขที่ --</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modalHistory')" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="bg-blue-50/80 rounded-2xl p-3.5 mb-4 border border-blue-100">
+                <p class="text-[10px] text-iosBlue font-bold uppercase tracking-wider">ยอดเงินออมสะสมรวม</p>
+                <p class="text-2xl font-black text-iosBlue mt-0.5"><span id="historyStudentTotal">0</span> <span class="text-xs font-normal">บาท</span></p>
+            </div>
+
+            <h4 class="font-bold text-slate-700 text-xs mb-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-clock-rotate-left text-iosBlue"></i> ประวัติการออมพร้อมพยาน
+            </h4>
+            <div id="historyListContainer" class="max-h-56 overflow-y-auto space-y-2 pr-1">
+                <!-- Entries populated by JS -->
+            </div>
+
+            <button onclick="closeModal('modalHistory')" class="w-full mt-4 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl text-xs touch-active">ปิด</button>
+        </div>
+    </div>
+
+    <!-- MODAL 5: GOOGLE SHEETS INTEGRATION & DIRECT LINK -->
+    <div id="modalSheets" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-app border border-slate-200 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm">📊</span>
+                    <span>เชื่อมต่อ Google Sheets & Web App</span>
+                </h3>
+                <button onclick="closeModal('modalSheets')" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Direct Google Sheets Link Config -->
+            <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl mb-3">
+                <label class="block text-xs font-bold text-emerald-900 mb-1">📊 ลิงก์ตรงไฟล์ Google Sheets (สำหรับเปิดดูตาราง):</label>
+                <div class="flex gap-2">
+                    <input type="url" id="inputSheetDirectUrl" placeholder="https://docs.google.com/spreadsheets/d/..." class="flex-1 bg-white border border-emerald-300 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <button onclick="saveSheetDirectUrl()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-xl text-xs transition touch-active shrink-0">
+                        บันทึก
+                    </button>
+                </div>
+            </div>
+
+            <!-- Apps Script Web App URL Config -->
+            <div class="bg-blue-50 border border-blue-200 p-3.5 rounded-2xl mb-4">
+                <label class="block text-xs font-bold text-blue-900 mb-1">🔗 Web App URL จาก Google Apps Script (สำหรับบันทึกข้อมูล):</label>
+                <div class="flex gap-2">
+                    <input type="url" id="inputScriptUrl" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 bg-white border border-blue-300 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-iosBlue">
+                    <button onclick="saveScriptUrl()" class="bg-iosBlue hover:bg-blue-600 text-white font-bold px-3 py-2 rounded-xl text-xs transition touch-active shrink-0">
+                        บันทึก
+                    </button>
+                    <button onclick="clearScriptUrl()" class="bg-red-100 hover:bg-red-200 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition touch-active shrink-0" title="ยกเลิกการเชื่อมต่อ URL เดิม">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+                <p id="scriptUrlSavedText" class="text-[11px] font-bold text-emerald-700 mt-1.5 hidden"><i class="fa-solid fa-circle-check"></i> บันทึกการเชื่อมต่อเรียบร้อยแล้ว!</p>
+                <p id="scriptUrlClearedText" class="text-[11px] font-bold text-red-600 mt-1.5 hidden"><i class="fa-solid fa-circle-check"></i> ยกเลิกการเชื่อมต่อเรียบร้อยแล้ว!</p>
+            </div>
+
+            <div class="space-y-3 text-xs text-slate-700">
+                <div class="bg-slate-100 border border-slate-200 rounded-2xl p-3.5">
+                    <h4 class="font-bold text-slate-800 mb-1">วิธีเชื่อมต่อ Apps Script ลง Google Sheets:</h4>
+                    <ol class="list-decimal list-inside space-y-1 text-slate-600 text-[11px]">
+                        <li>เปิดไฟล์ Google Sheet ที่ต้องการใช้ออมเงิน</li>
+                        <li>ไปที่เมนู **ส่วนขยาย (Extensions)** ➔ **Apps Script**</li>
+                        <li>กดปุ่ม **"คัดลอกโค้ด"** ด้านล่าง นำไปวางแทนที่โค้ดเดิมแล้วกดบันทึก</li>
+                        <li>กด **การนำไปใช้งาน (Deploy)** ➔ **การนำไปใช้งานใหม่ (New deployment)**</li>
+                        <li>เลือก **เว็บแอป (Web App)** กำหนดสิทธิ์เป็น **ทุกคน (Anyone)** แล้วกดนำไปใช้งาน</li>
+                        <li>คัดลอก **Web App URL** นำมาวางช่องบนแล้วกด **"บันทึก"**</li>
+                    </ol>
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block font-bold text-slate-600">โค้ด Google Apps Script:</label>
+                        <button onclick="copyAppsScriptCode()" class="text-[11px] bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold px-2.5 py-1 rounded-lg transition touch-active flex items-center gap-1.5">
+                            <i class="fa-regular fa-copy"></i>
+                            <span id="copyScriptBtnText">คัดลอกโค้ด</span>
+                        </button>
+                    </div>
+                    <pre id="appsScriptCodeBlock" class="bg-slate-900 text-emerald-400 p-3.5 rounded-2xl text-[11px] overflow-x-auto font-mono">
+function doGet(e) {
+  return ContentService.createTextOutput("เชื่อมต่อระบบออมเงินสำเร็จเรียบร้อยแล้ว !");
+}
+
+function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  
+  // สร้างหัวข้อคอลัมน์อัตโนมัติหากเป็นแผ่นงานใหม่
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["ตราประทับเวลา", "วันที่ออมเงิน", "ชื่อ-นามสกุล", "จำนวนเงิน (บาท)", "พยานรับเงิน"]);
+  }
+  
+  var data = JSON.parse(e.postData.contents);
+  sheet.appendRow([new Date(), data.date, data.studentName, data.amount, data.witness]);
+  return ContentService.createTextOutput("Success");
+}</pre>
+                </div>
+            </div>
+            <button onclick="closeModal('modalSheets')" class="w-full mt-4 py-2.5 bg-slate-800 text-white font-bold rounded-xl text-xs touch-active">ปิดหน้าต่าง</button>
+        </div>
+    </div>
+
+    <!-- MODAL 6: SHARE LINK -->
+    <div id="modalShare" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xs w-full p-6 shadow-app border border-slate-200 text-center">
+            <div class="w-12 h-12 bg-purple-100 text-iosPurple rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">🔗</div>
+            <h3 class="text-base font-bold text-slate-800 mb-1">แชร์ลิงก์สำหรับผู้ปกครอง</h3>
+            <p class="text-[11px] text-slate-500 mb-4">ผู้ปกครองสามารถเปิดดูยอดเงินออมผ่านอุปกรณ์ใดก็ได้แบบดูอย่างเดียว</p>
+            <button onclick="copyShareLink()" class="w-full py-2.5 bg-iosPurple hover:bg-purple-600 text-white font-bold rounded-xl text-xs shadow-md touch-active">
+                <i class="fa-solid fa-copy"></i> คัดลอกลิงก์
+            </button>
+            <p id="copyShareSuccess" class="text-xs font-bold text-emerald-600 mt-2 hidden">คัดลอกลิงก์เรียบร้อย!</p>
+            <button onclick="closeModal('modalShare')" class="w-full mt-2 py-2 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs touch-active">ปิด</button>
+        </div>
+    </div>
+
+    <!-- MODAL 7: EDIT TITLE & GOAL -->
+    <div id="modalTitle" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xs w-full p-6 shadow-app border border-slate-200">
+            <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-iosBlue/10 text-iosBlue flex items-center justify-center text-sm">✏️</span>
+                <span>ตั้งค่าห้องเรียน & เป้าหมาย</span>
+            </h3>
+            <form onsubmit="submitTitleEdit(event)">
+                <div class="mb-3">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">ชื่อห้องเรียน / กลุ่ม:</label>
+                    <input type="text" id="inputClassName" required class="w-full bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+                </div>
+                <div class="mb-5">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">เป้าหมายเงินออม (บาท/คน):</label>
+                    <input type="number" id="inputTargetGoal" required class="w-full bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" onclick="closeModal('modalTitle')" class="w-1/2 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs touch-active">ยกเลิก</button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-iosBlue hover:bg-blue-600 text-white font-bold rounded-xl text-xs shadow-md touch-active">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Constants & Initial Mock Data
+        const AVATARS = ['🐱', '🐰', '🦁', '🦊', '🐘', '🐼', '🐯', '🐸', '🦄', '🐶', '🐻', '🐨'];
+        const DEFAULT_TEACHER = 'ครูปูเปี้ยว';
+        const TEACHER_PASS = '23071998';
+
+        const INITIAL_STUDENTS = [
+            { id: '1', no: 1, name: 'เด็กชาย ตี๋น้อย รักเรียน', avatar: '🐱', savings: { '2026-09-22': 60, '2026-09-21': 100, '2026-09-20': 150 } },
+            { id: '2', no: 2, name: 'เด็กหญิง สดใส ใจดี', avatar: '🐰', savings: { '2026-09-22': 20, '2026-09-21': 50, '2026-09-20': 100 } },
+            { id: '3', no: 3, name: 'เด็กชาย เก่งกาจ สามารถ', avatar: '🦁', savings: { '2026-09-22': 100, '2026-09-21': 100, '2026-09-20': 100 } },
+            { id: '4', no: 4, name: 'เด็กหญิง มะลิ หอมหวาน', avatar: '🦊', savings: { '2026-09-22': 20, '2026-09-21': 40, '2026-09-20': 50 } },
+            { id: '5', no: 5, name: 'เด็กชาย ช้างน้อย ขยันออม', avatar: '🐘', savings: { '2026-09-22': 50, '2026-09-21': 20 } },
+            { id: '6', no: 6, name: 'เด็กหญิง พอเพียง มีสุข', avatar: '🐼', savings: { '2026-09-22': 100, '2026-09-21': 100, '2026-09-20': 100 } },
+        ];
+
+        // Application State
+        let state = {
+            className: localStorage.getItem('savings_class_name') || 'ตี๋น้อย ป.6/3',
+            targetGoal: Number(localStorage.getItem('savings_target_goal')) || 300,
+            selectedDate: new Date().toISOString().split('T')[0],
+            isLoggedIn: localStorage.getItem('savings_is_logged_in') === 'true',
+            isEditMode: localStorage.getItem('savings_is_logged_in') === 'true',
+            scriptUrl: localStorage.getItem('savings_script_url') || '',
+            sheetDirectUrl: localStorage.getItem('savings_sheet_direct_url') || '',
+            activeTab: 'table',
+            searchQuery: '',
+            deletingStudentId: null,
+            witnesses: JSON.parse(localStorage.getItem('savings_witnesses_data') || '{"2026-09-22": "เด็กชาย เก่งกาจ สามารถ"}'),
+            students: JSON.parse(localStorage.getItem('savings_students_data') || JSON.stringify(INITIAL_STUDENTS))
+        };
+
+        // Web Audio API Sound FX
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playCoinSound() {
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(987.77, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1318.51, audioCtx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.25);
+            } catch (e) {
+                // Ignore audio blocks
+            }
+        }
+
+        window.onload = function() {
+            populateAvatarSelects();
+            document.getElementById('inputSelectedDate').value = state.selectedDate;
+            document.getElementById('inputScriptUrl').value = state.scriptUrl;
+            document.getElementById('inputSheetDirectUrl').value = state.sheetDirectUrl;
+            renderApp();
+        };
+
+        function saveState() {
+            localStorage.setItem('savings_class_name', state.className);
+            localStorage.setItem('savings_target_goal', state.targetGoal);
+            localStorage.setItem('savings_script_url', state.scriptUrl);
+            localStorage.setItem('savings_sheet_direct_url', state.sheetDirectUrl);
+            localStorage.setItem('savings_witnesses_data', JSON.stringify(state.witnesses));
+            localStorage.setItem('savings_students_data', JSON.stringify(state.students));
+        }
+
+        function saveScriptUrl() {
+            const url = document.getElementById('inputScriptUrl').value.trim();
+            state.scriptUrl = url;
+            saveState();
+            const txt = document.getElementById('scriptUrlSavedText');
+            txt.classList.remove('hidden');
+            setTimeout(() => txt.classList.add('hidden'), 3000);
+            renderApp();
+        }
+
+        function saveSheetDirectUrl() {
+            const url = document.getElementById('inputSheetDirectUrl').value.trim();
+            state.sheetDirectUrl = url;
+            saveState();
+            renderApp();
+        }
+
+        function clearScriptUrl() {
+            state.scriptUrl = '';
+            document.getElementById('inputScriptUrl').value = '';
+            saveState();
+            const txt = document.getElementById('scriptUrlClearedText');
+            txt.classList.remove('hidden');
+            setTimeout(() => txt.classList.add('hidden'), 3000);
+            renderApp();
+        }
+
+        function sendToGoogleSheets(studentName, amount) {
+            if (!state.scriptUrl) return;
+            const witness = state.witnesses[state.selectedDate] || 'ไม่ได้ระบุ';
+            fetch(state.scriptUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    date: state.selectedDate,
+                    studentName: studentName,
+                    amount: amount,
+                    witness: witness
+                })
+            }).catch(e => console.log('Sheets sync error:', e));
+        }
+
+        function populateAvatarSelects() {
+            const addSel = document.getElementById('addStudentAvatar');
+            const editSel = document.getElementById('editStudentAvatar');
+            const options = AVATARS.map(a => `<option value="${a}">${a} สัตว์ประจำเป็นตัว</option>`).join('');
+            addSel.innerHTML = options;
+            editSel.innerHTML = options;
+        }
+
+        function renderApp() {
+            // Header elements
+            document.getElementById('headerClassName').innerText = state.className;
+            document.getElementById('headerTeacherName').innerText = `ครูประจำชั้น: ${DEFAULT_TEACHER}`;
+            document.getElementById('modalTeacherName').innerText = DEFAULT_TEACHER;
+            document.getElementById('goalBadge').innerText = `เป้าหมาย ${state.targetGoal} บาท`;
+
+            // Direct Sheets Link Button State
+            const btnOpenSheetDirect = document.getElementById('btnOpenSheetDirect');
+            if (state.sheetDirectUrl) {
+                btnOpenSheetDirect.href = state.sheetDirectUrl;
+                btnOpenSheetDirect.classList.remove('hidden');
+                btnOpenSheetDirect.classList.add('flex');
+            } else {
+                btnOpenSheetDirect.classList.add('hidden');
+                btnOpenSheetDirect.classList.remove('flex');
+            }
+
+            // Google Sheets Status Badge
+            const sheetsBadge = document.getElementById('sheetsStatusBadge');
+            if (state.scriptUrl) {
+                sheetsBadge.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm";
+            } else {
+                sheetsBadge.className = "w-2.5 h-2.5 rounded-full bg-slate-300";
+            }
+
+            // Controls Visibility by Mode
+            const btnEditTitle = document.getElementById('btnEditTitle');
+            const btnLogout = document.getElementById('btnLogout');
+            const btnModeTeacher = document.getElementById('btnModeTeacher');
+            const btnModeView = document.getElementById('btnModeView');
+            const viewOnlyNotice = document.getElementById('viewOnlyNotice');
+            const btnAddStudentTrigger = document.getElementById('btnAddStudentTrigger');
+
+            if (state.isEditMode) {
+                btnEditTitle.classList.remove('hidden');
+                btnLogout.classList.remove('hidden');
+                viewOnlyNotice.classList.add('hidden');
+                btnAddStudentTrigger.classList.remove('hidden');
+                btnAddStudentTrigger.classList.add('flex');
+
+                btnModeTeacher.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition bg-iosBlue text-white shadow-sm";
+                btnModeView.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:bg-slate-100";
+            } else {
+                btnEditTitle.classList.add('hidden');
+                btnLogout.classList.add('hidden');
+                viewOnlyNotice.classList.remove('hidden');
+                btnAddStudentTrigger.classList.add('hidden');
+                btnAddStudentTrigger.classList.remove('flex');
+
+                btnModeTeacher.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:bg-slate-100";
+                btnModeView.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition bg-emerald-500 text-white shadow-sm";
+            }
+
+            // Calculate Totals
+            let grandTotal = 0;
+            let dailyTotal = 0;
+            let completedCount = 0;
+
+            const filteredStudents = state.students.filter(s => 
+                s.name.toLowerCase().includes(state.searchQuery.toLowerCase()) || 
+                s.no.toString().includes(state.searchQuery)
+            );
+
+            state.students.forEach(s => {
+                const total = Object.values(s.savings || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+                grandTotal += total;
+                if (total >= state.targetGoal) completedCount++;
+                dailyTotal += Number(s.savings?.[state.selectedDate]) || 0;
+            });
+
+            document.getElementById('statDailyTotal').innerText = dailyTotal.toLocaleString();
+            document.getElementById('statGrandTotal').innerText = grandTotal.toLocaleString();
+            document.getElementById('statCompletedCount').innerText = completedCount;
+            document.getElementById('statTotalStudentsLabel').innerText = `/ ${state.students.length} คน`;
+            document.getElementById('statCountAll').innerText = state.students.length;
+
+            document.getElementById('tableHeaderDate').innerText = state.selectedDate;
+            document.getElementById('footDailyTotal').innerText = dailyTotal.toLocaleString();
+            document.getElementById('footGrandTotal').innerText = grandTotal.toLocaleString();
+
+            const currentWitness = state.witnesses[state.selectedDate] || 'ยังไม่ได้ระบุ';
+            document.getElementById('footWitnessName').innerText = currentWitness;
+
+            // Render witness options
+            const selectWitness = document.getElementById('selectWitness');
+            selectWitness.disabled = !state.isEditMode;
+            selectWitness.innerHTML = '<option value="">-- เลือกนักเรียนพยาน --</option>' +
+                state.students.map(s => `<option value="${s.name}" ${currentWitness === s.name ? 'selected' : ''}>เลขที่ ${s.no} - ${s.name}</option>`).join('');
+
+            renderTable(filteredStudents);
+            renderCards(filteredStudents);
+        }
+
+        function renderTable(students) {
+            const tbody = document.getElementById('studentTableBody');
+            if (students.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-slate-400 font-medium">ไม่พบข้อมูลนักเรียน</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = students.map(s => {
+                const total = Object.values(s.savings || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+                const isCompleted = total >= state.targetGoal;
+                const todaySavings = s.savings?.[state.selectedDate] ?? '';
+
+                return `
+                    <tr class="hover:bg-slate-50 transition ${isCompleted ? 'bg-amber-50/30' : ''}">
+                        <td class="py-3 px-4 text-center font-bold text-slate-500">${s.no}</td>
+                        <td class="py-3 px-4">
+                            <div class="flex items-center gap-2.5">
+                                <span class="text-xl p-1.5 bg-slate-100 rounded-2xl shadow-sm">${s.avatar}</span>
+                                <span class="font-bold text-slate-800">${s.name}</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <input type="number" min="0" value="${todaySavings}" 
+                                    onchange="handleSavingsChange('${s.id}', this.value)"
+                                    ${!state.isEditMode ? 'disabled' : ''} 
+                                    placeholder="0" 
+                                    class="w-20 text-center font-bold bg-slate-100 border border-slate-200 rounded-xl px-2 py-1.5 text-xs focus:outline-none focus:bg-white focus:ring-2 focus:ring-iosBlue disabled:bg-slate-100 disabled:text-slate-600">
+                                ${state.isEditMode ? `
+                                    <div class="flex gap-1">
+                                        <button onclick="handleQuickAdd('${s.id}', 10)" class="px-2 py-1 text-[11px] font-bold bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 touch-active">+10</button>
+                                        <button onclick="handleQuickAdd('${s.id}', 20)" class="px-2 py-1 text-[11px] font-bold bg-blue-100 text-iosBlue rounded-lg hover:bg-blue-200 touch-active">+20</button>
+                                        <button onclick="handleQuickAdd('${s.id}', 50)" class="px-2 py-1 text-[11px] font-bold bg-emerald-100 text-emerald-800 rounded-lg hover:bg-emerald-200 touch-active">+50</button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 text-center font-bold text-slate-800">
+                            ${total.toLocaleString()} <span class="text-[10px] font-normal text-slate-400">บาท</span>
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            ${isCompleted ? 
+                                `<span class="inline-flex items-center gap-1 bg-amber-400 text-slate-900 font-extrabold px-3 py-0.5 rounded-full text-[10px] shadow-sm">👑 ออมครบแล้ว 🏆</span>` : 
+                                `<span class="inline-flex items-center gap-1 bg-slate-100 text-slate-600 font-semibold px-2.5 py-0.5 rounded-full text-[10px]">ขาดอีก ${state.targetGoal - total} บ.</span>`
+                            }
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <button onclick="openHistoryModal('${s.id}')" class="p-2 text-iosBlue hover:bg-blue-50 rounded-xl transition touch-active" title="ดูประวัติการออม">
+                                    <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+                                </button>
+                                ${state.isEditMode ? `
+                                    <button onclick="openEditStudentModal('${s.id}')" class="p-2 text-amber-600 hover:bg-amber-50 rounded-xl transition touch-active" title="แก้ไขนักเรียน">
+                                        <i class="fa-solid fa-pen text-sm"></i>
+                                    </button>
+                                    <button onclick="openDeleteStudentModal('${s.id}')" class="p-2 text-iosRed hover:bg-red-50 rounded-xl transition touch-active" title="ลบนักเรียน">
+                                        <i class="fa-solid fa-trash-can text-sm"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderCards(students) {
+            const cardsContainer = document.getElementById('tabContentCards');
+            if (students.length === 0) {
+                cardsContainer.innerHTML = `<div class="col-span-3 py-12 text-center text-slate-400 font-medium">ไม่พบข้อมูลนักเรียน</div>`;
+                return;
+            }
+
+            cardsContainer.innerHTML = students.map(s => {
+                const total = Object.values(s.savings || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+                const isCompleted = total >= state.targetGoal;
+                const percent = Math.min(100, Math.round((total / state.targetGoal) * 100));
+
+                return `
+                    <div class="bg-white rounded-3xl p-4 border transition-all duration-200 shadow-sm hover:shadow-md ${isCompleted ? 'gold-glow' : 'border-slate-200'}">
+                        ${isCompleted ? `<div class="bg-amber-400 text-slate-900 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-sm w-fit mb-2">👑 ออมครบ ${state.targetGoal} บาทแล้ว!</div>` : ''}
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-12 h-12 bg-slate-100 rounded-2xl border border-slate-200 flex items-center justify-center text-2xl shadow-sm">${s.avatar}</div>
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">เลขที่ ${s.no}</span>
+                                <h3 class="font-bold text-slate-800 text-sm leading-tight">${s.name}</h3>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] font-bold mb-1">
+                                <span class="text-slate-500">ความคืบหน้า</span>
+                                <span class="${isCompleted ? 'text-amber-800 font-black' : 'text-iosBlue'}">${percent}%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden p-0.5 border border-slate-200">
+                                <div class="h-full rounded-full transition-all duration-300 ${isCompleted ? 'bg-gradient-to-r from-amber-400 to-yellow-500' : 'bg-iosBlue'}" style="width: ${percent}%"></div>
+                            </div>
+                            <div class="flex justify-between items-center mt-3 text-xs">
+                                <span class="text-slate-500">สะสมแล้ว: <strong class="text-slate-800 font-bold">${total.toLocaleString()}</strong> บาท</span>
+                                <button onclick="openHistoryModal('${s.id}')" class="text-iosBlue hover:underline font-bold text-[11px]">ดูประวัติ →</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setEditMode(enable) {
+            state.isEditMode = enable;
+            renderApp();
+        }
+
+        function handleTeacherModeClick() {
+            if (state.isLoggedIn) {
+                setEditMode(true);
+            } else {
+                openModal('modalLogin');
+            }
+        }
+
+        function submitTeacherLogin(e) {
+            e.preventDefault();
+            const pin = document.getElementById('inputLoginPin').value;
+            const err = document.getElementById('loginErrorMsg');
+            if (pin === TEACHER_PASS) {
+                state.isLoggedIn = true;
+                state.isEditMode = true;
+                localStorage.setItem('savings_is_logged_in', 'true');
+                err.classList.add('hidden');
+                document.getElementById('inputLoginPin').value = '';
+                closeModal('modalLogin');
+                renderApp();
+            } else {
+                err.innerText = 'รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง';
+                err.classList.remove('hidden');
+            }
+        }
+
+        function logoutTeacher() {
+            state.isLoggedIn = false;
+            state.isEditMode = false;
+            localStorage.setItem('savings_is_logged_in', 'false');
+            renderApp();
+        }
+
+        function handleSavingsChange(studentId, val) {
+            if (!state.isEditMode) return;
+            const num = Math.max(0, Number(val) || 0);
+            const student = state.students.find(s => s.id === studentId);
+            if (!student) return;
+
+            const prevTotal = Object.values(student.savings || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+            if (!student.savings) student.savings = {};
+
+            if (num === 0) {
+                delete student.savings[state.selectedDate];
+            } else {
+                student.savings[state.selectedDate] = num;
+                playCoinSound();
+                sendToGoogleSheets(student.name, num);
+            }
+
+            const newTotal = Object.values(student.savings).reduce((a, b) => a + (Number(b) || 0), 0);
+            if (prevTotal < state.targetGoal && newTotal >= state.targetGoal && typeof confetti === 'function') {
+                confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
+            }
+
+            saveState();
+            renderApp();
+        }
+
+        function handleQuickAdd(studentId, addAmt) {
+            const student = state.students.find(s => s.id === studentId);
+            const curr = Number(student?.savings?.[state.selectedDate]) || 0;
+            handleSavingsChange(studentId, curr + addAmt);
+        }
+
+        function handleDateChange(dateVal) {
+            state.selectedDate = dateVal;
+            renderApp();
+        }
+
+        function handleWitnessChange(witnessName) {
+            state.witnesses[state.selectedDate] = witnessName;
+            saveState();
+            renderApp();
+        }
+
+        function handleSearch(q) {
+            state.searchQuery = q;
+            renderApp();
+        }
+
+        function switchTab(tab) {
+            state.activeTab = tab;
+            const navTable = document.getElementById('navTable');
+            const navCards = document.getElementById('navCards');
+            const tabContentTable = document.getElementById('tabContentTable');
+            const tabContentCards = document.getElementById('tabContentCards');
+
+            if (tab === 'table') {
+                navTable.className = "px-3.5 py-1.5 rounded-xl font-bold text-xs text-iosBlue bg-white shadow-sm transition";
+                navCards.className = "px-3.5 py-1.5 rounded-xl font-bold text-xs text-slate-600 hover:text-slate-800 transition";
+                tabContentTable.classList.remove('hidden');
+                tabContentCards.classList.add('hidden');
+            } else {
+                navCards.className = "px-3.5 py-1.5 rounded-xl font-bold text-xs text-iosPurple bg-white shadow-sm transition";
+                navTable.className = "px-3.5 py-1.5 rounded-xl font-bold text-xs text-slate-600 hover:text-slate-800 transition";
+                tabContentCards.classList.remove('hidden');
+                tabContentTable.classList.add('hidden');
+            }
+        }
+
+        // Student Management Modals
+        function submitAddStudent(e) {
+            e.preventDefault();
+            const no = Number(document.getElementById('addStudentNo').value);
+            const name = document.getElementById('addStudentName').value.trim();
+            const avatar = document.getElementById('addStudentAvatar').value;
+
+            state.students.push({ id: Date.now().toString(), no, name, avatar, savings: {} });
+            state.students.sort((a, b) => a.no - b.no);
+            saveState();
+            closeModal('modalAddStudent');
+            renderApp();
+        }
+
+        function openEditStudentModal(id) {
+            const student = state.students.find(s => s.id === id);
+            if (!student) return;
+            document.getElementById('editStudentId').value = student.id;
+            document.getElementById('editStudentNo').value = student.no;
+            document.getElementById('editStudentName').value = student.name;
+            document.getElementById('editStudentAvatar').value = student.avatar;
+            openModal('modalEditStudent');
+        }
+
+        function submitEditStudent(e) {
+            e.preventDefault();
+            const id = document.getElementById('editStudentId').value;
+            const student = state.students.find(s => s.id === id);
+            if (student) {
+                student.no = Number(document.getElementById('editStudentNo').value);
+                student.name = document.getElementById('editStudentName').value.trim();
+                student.avatar = document.getElementById('editStudentAvatar').value;
+                state.students.sort((a, b) => a.no - b.no);
+                saveState();
+                renderApp();
+            }
+            closeModal('modalEditStudent');
+        }
+
+        function openDeleteStudentModal(id) {
+            const student = state.students.find(s => s.id === id);
+            if (!student) return;
+            state.deletingStudentId = id;
+            document.getElementById('deleteStudentText').innerText = `คุณต้องการลบ "${student.name}" (เลขที่ ${student.no}) หรือไม่?`;
+            openModal('modalDeleteStudent');
+        }
+
+        function confirmDeleteStudent() {
+            if (state.deletingStudentId) {
+                state.students = state.students.filter(s => s.id !== state.deletingStudentId);
+                state.deletingStudentId = null;
+                saveState();
+                renderApp();
+            }
+            closeModal('modalDeleteStudent');
+        }
+
+        // Student History Modal with Witness Details
+        function openHistoryModal(id) {
+            const student = state.students.find(s => s.id === id);
+            if (!student) return;
+
+            document.getElementById('historyStudentAvatar').innerText = student.avatar;
+            document.getElementById('historyStudentName').innerText = student.name;
+            document.getElementById('historyStudentNo').innerText = `เลขที่ ${student.no}`;
+
+            const total = Object.values(student.savings || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+            document.getElementById('historyStudentTotal').innerText = total.toLocaleString();
+
+            const container = document.getElementById('historyListContainer');
+            const entries = Object.entries(student.savings || {}).sort((a, b) => new Date(b[0]) - new Date(a[0]));
+
+            if (entries.length === 0) {
+                container.innerHTML = `<p class="text-center text-slate-400 py-4 text-xs font-medium">ยังไม่มีรายการบันทึกเงินออม</p>`;
+            } else {
+                container.innerHTML = entries.map(([date, amount]) => `
+                    <div class="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs">
+                        <div>
+                            <div class="font-bold text-slate-700">📅 ${date}</div>
+                            <div class="text-[10px] text-slate-500 mt-0.5">🤝 พยาน: <strong class="text-slate-700">${state.witnesses[date] || 'ไม่ได้ระบุ'}</strong></div>
+                        </div>
+                        <span class="font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">+${amount} บาท</span>
+                    </div>
+                `).join('');
+            }
+
+            openModal('modalHistory');
+        }
+
+        // Classroom Title Modal
+        function openTitleModal() {
+            document.getElementById('inputClassName').value = state.className;
+            document.getElementById('inputTargetGoal').value = state.targetGoal;
+            openModal('modalTitle');
+        }
+
+        function submitTitleEdit(e) {
+            e.preventDefault();
+            state.className = document.getElementById('inputClassName').value.trim();
+            state.targetGoal = Number(document.getElementById('inputTargetGoal').value) || 300;
+            saveState();
+            closeModal('modalTitle');
+            renderApp();
+        }
+
+        function copyShareLink() {
+            document.execCommand('copy');
+            const successText = document.getElementById('copyShareSuccess');
+            successText.classList.remove('hidden');
+            setTimeout(() => successText.classList.add('hidden'), 2500);
+        }
+
+        function copyAppsScriptCode() {
+            const codeText = document.getElementById('appsScriptCodeBlock').innerText;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = codeText;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            const btnText = document.getElementById('copyScriptBtnText');
+            if (btnText) {
+                btnText.innerText = 'คัดลอกแล้ว! ✨';
+                setTimeout(() => {
+                    btnText.innerText = 'คัดลอกโค้ด';
+                }, 2000);
+            }
+        }
+
+        // Generic Modal Helpers
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
